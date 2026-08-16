@@ -1,0 +1,124 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+//  ==============================================================  \\
+
+enum Channel {
+  WHATSAPP
+  CHATBOT
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model Business {
+  id   String @id @default(cuid())
+  name String
+
+  traders Trader[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Trader {
+  id         String @id @default(cuid())
+  businessId String
+
+  name  String
+  email String?
+  phone String?
+
+  stripeAccountId String?
+
+  business Business @relation(fields: [businessId], references: [id])
+
+  workAreas WorkArea[]
+  bookings  Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+}
+
+model WorkArea {
+  id       String @id @default(cuid())
+  traderId String
+
+  date DateTime
+  area String
+
+  trader Trader @relation(fields: [traderId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([traderId, date])
+}
+
+model Customer {
+  id String @id @default(cuid())
+
+  name  String?
+  phone String?
+  email String?
+
+  bookings Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Booking {
+  id String @id @default(cuid())
+
+  traderId   String
+  customerId String
+
+  channel Channel
+
+  startAt DateTime
+  endAt   DateTime
+
+  status BookingStatus @default(PENDING)
+
+  bookingFee Int
+  currency   String @default("gbp")
+
+  paymentStatus PaymentStatus @default(PENDING)
+
+  stripePaymentIntentId String?
+  stripeTransferId      String?
+
+  trader Trader @relation(fields: [traderId], references: [id])
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([traderId, startAt])
+  @@index([customerId])
+}
