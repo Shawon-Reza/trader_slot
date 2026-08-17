@@ -12,11 +12,91 @@ datasource db {
   provider = "postgresql"
 }
 
-//  ==============================================================  \\
+// ============================ Better Auth User ============================ \\
 
-enum Channel {
-  WHATSAPP
-  CHATBOT
+enum ActiveMode {
+  CUSTOMER
+  TRADER
+}
+
+model User {
+  id            String    @id
+  name          String
+  email         String
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+
+  // activeMode ActiveMode @default(CUSTOMER)
+
+  trader   Trader?
+  customer Customer?
+
+  activeMode String? @default("CUSTOMER")
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// ==============================================================  \\
+// ======================================================
+// ENUMS
+// ======================================================
+
+enum UserRole {
+  TRADER
+  CUSTOMER
 }
 
 enum BookingStatus {
@@ -28,13 +108,35 @@ enum BookingStatus {
 
 enum PaymentStatus {
   PENDING
+  PROCESSING
   PAID
   FAILED
   REFUNDED
 }
 
+enum Channel {
+  WHATSAPP
+  CHATBOT
+}
+
+enum MessageSender {
+  CUSTOMER
+  BOT
+  TRADER
+}
+
+enum ConversationStatus {
+  ACTIVE
+  CLOSED
+}
+
+// ======================================================
+// BUSINESS
+// ======================================================
+
 model Business {
-  id   String @id @default(cuid())
+  id String @id @default(cuid())
+
   name String
 
   traders Trader[]
@@ -43,17 +145,21 @@ model Business {
   updatedAt DateTime @updatedAt
 }
 
-model Trader {
-  id         String @id @default(cuid())
-  businessId String
+// ======================================================
+// TRADER
+// ======================================================
 
-  name  String
-  email String?
-  phone String?
+model Trader {
+  id String @id @default(cuid())
+
+  userId     String @unique
+  businessId String
 
   stripeAccountId String?
 
-  business Business @relation(fields: [businessId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   workAreas WorkArea[]
   bookings  Booking[]
@@ -64,32 +170,114 @@ model Trader {
   @@index([businessId])
 }
 
-model WorkArea {
-  id       String @id @default(cuid())
-  traderId String
-
-  date DateTime
-  area String
-
-  trader Trader @relation(fields: [traderId], references: [id])
-
-  createdAt DateTime @default(now())
-
-  @@index([traderId, date])
-}
+// ======================================================
+// CUSTOMER
+// ======================================================
 
 model Customer {
   id String @id @default(cuid())
+
+  // Optional because a WhatsApp customer
+  // may not have a TradeSlot account.
+  userId String? @unique
 
   name  String?
   phone String?
   email String?
 
-  bookings Booking[]
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  bookings      Booking[]
+  conversations Conversation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([phone])
 }
+
+// ======================================================
+// TRADER WORK AREA
+// ======================================================
+
+model WorkArea {
+  id String @id @default(cuid())
+
+  traderId String
+
+  // Date for which this work area is active.
+  date DateTime
+
+  area String
+
+  trader Trader @relation(fields: [traderId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // A trader should only have one work area
+  // for a particular day.
+  @@unique([traderId, date])
+  @@index([traderId, date])
+}
+
+// ======================================================
+// CONVERSATION
+// ======================================================
+
+model Conversation {
+  id String @id @default(cuid())
+
+  customerId String
+  channel    Channel
+  status     ConversationStatus @default(ACTIVE)
+
+  // External identifier from WhatsApp/chat system.
+  // Useful for connecting incoming messages
+  // to the correct conversation.
+  externalId String?
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  messages Message[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([channel])
+  @@index([externalId])
+}
+
+// ======================================================
+// MESSAGE
+// ======================================================
+
+model Message {
+  id String @id @default(cuid())
+
+  conversationId String
+
+  sender  MessageSender
+  content String
+
+  // WhatsApp's message ID or another
+  // external channel message ID.
+  externalId String?
+
+  timestamp DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId, timestamp])
+  @@index([externalId])
+}
+
+// ======================================================
+// BOOKING
+// ======================================================
 
 model Booking {
   id String @id @default(cuid())
@@ -104,21 +292,53 @@ model Booking {
 
   status BookingStatus @default(PENDING)
 
+  // Store money in the smallest currency unit.
+  // Example:
+  // £20.00 => 2000
   bookingFee Int
   currency   String @default("gbp")
 
-  paymentStatus PaymentStatus @default(PENDING)
+  trader Trader @relation(fields: [traderId], references: [id], onDelete: Restrict)
 
-  stripePaymentIntentId String?
-  stripeTransferId      String?
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
 
-  trader Trader @relation(fields: [traderId], references: [id])
-
-  customer Customer @relation(fields: [customerId], references: [id])
+  payment Payment?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([traderId, startAt])
+  @@index([traderId, startAt, endAt])
   @@index([customerId])
+  @@index([status])
+}
+
+// ======================================================
+// PAYMENT
+// ======================================================
+
+model Payment {
+  id String @id @default(cuid())
+
+  bookingId String @unique
+
+  amount   Int
+  currency String @default("gbp")
+
+  status PaymentStatus @default(PENDING)
+
+  stripePaymentIntentId String? @unique
+
+  // Stripe transfer ID if you use a separate transfer
+  // flow and need to track it.
+  stripeTransferId String? @unique
+
+  // Platform's application fee.
+  platformFee Int
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
 }
