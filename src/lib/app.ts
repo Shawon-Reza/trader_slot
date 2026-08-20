@@ -9,6 +9,9 @@ import { chatRoutes } from "../modules/chat/chat.routes";
 import { workAreaRoutes } from "../modules/workArea/workArea.routes";
 import { bookingRoutes } from "../modules/booking/booking.routes";
 import { stripeRoutes } from "../modules/stripe/stripe.routes";
+import { traderRoute } from "../modules/trader/trader.route";
+import { activeMode } from "../modules/activeMode/activeMode.toggle";
+import { authMiddleware } from "../middleware/src/middleware/middleware";
 
 export const app = express()
 
@@ -65,6 +68,8 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/work-areas", workAreaRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/stripe", stripeRoutes);
+app.use("/api/trader", traderRoute);
+app.use("/api/activeMode", authMiddleware(), activeMode);
 
 //  Global Error Handler Middleware
 app.use(globalErrorHandler);
