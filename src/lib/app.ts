@@ -12,6 +12,7 @@ import { stripeRoutes } from "../modules/stripe/stripe.routes";
 import { traderRoute } from "../modules/trader/trader.route";
 import { activeMode } from "../modules/activeMode/activeMode.toggle";
 import { authMiddleware } from "../middleware/src/middleware/middleware";
+import { businessRoute } from "../modules/business/business.routes";
 
 export const app = express()
 
@@ -71,6 +72,7 @@ app.use("/api/stripe", stripeRoutes);
 
 app.use("/api/trader", authMiddleware("TRADER"), traderRoute);
 app.use("/api/activeMode", authMiddleware(), activeMode);
+app.use("/api/business", authMiddleware(), businessRoute);
 
 //  Global Error Handler Middleware
 app.use(globalErrorHandler);

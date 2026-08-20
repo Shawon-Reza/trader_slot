@@ -18,7 +18,7 @@ export const traderController = {
                 data: result
             })
         }
-        res.status(404).json({
+        res.status(200).json({
             success: false,
             traderExistance: false
         })
