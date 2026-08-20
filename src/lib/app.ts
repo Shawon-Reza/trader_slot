@@ -68,7 +68,8 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/work-areas", workAreaRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/stripe", stripeRoutes);
-app.use("/api/trader", traderRoute);
+
+app.use("/api/trader", authMiddleware("TRADER"), traderRoute);
 app.use("/api/activeMode", authMiddleware(), activeMode);
 
 //  Global Error Handler Middleware
