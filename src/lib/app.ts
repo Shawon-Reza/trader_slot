@@ -5,12 +5,16 @@ import { auth } from "./auth";
 import cors from "cors";
 import { prisma } from "./prisma";
 import { globalErrorHandler } from "../middleware/src/middleware/globalErrorHandler";
+import { chatRoutes } from "../modules/chat/chat.routes";
+import { workAreaRoutes } from "../modules/workArea/workArea.routes";
+import { bookingRoutes } from "../modules/booking/booking.routes";
+import { stripeRoutes } from "../modules/stripe/stripe.routes";
 
 export const app = express()
 
 
 app.get("/", (req, res) => {
-    res.send("Trader Platform API is running........");
+    // res.send("Trader Platform API is running........");
     res.status(200).json({
         success: true,
         status: "ok",
@@ -48,15 +52,19 @@ app.get("/api/health", async (_req, res) => {
 
 app.use(express.json());
 app.use(cors({
-    origin: ["http://localhost:3000","http://localhost:3001"],
+    origin: ["http://localhost:3000", "http://localhost:3001"],
     credentials: true,
 
 }));
 
 
+//  ================ Routes ===============
 app.all('/api/auth/{*any}', toNodeHandler(auth));
 
-
+app.use("/api/chat", chatRoutes);
+app.use("/api/work-areas", workAreaRoutes);
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/stripe", stripeRoutes);
 
 //  Global Error Handler Middleware
 app.use(globalErrorHandler);

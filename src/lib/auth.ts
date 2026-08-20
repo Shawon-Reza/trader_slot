@@ -26,4 +26,5 @@ export const auth = betterAuth({
 
 
 
-});
+
+}); 
