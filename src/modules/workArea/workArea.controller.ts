@@ -51,15 +51,21 @@ export const workAreaController = {
     try {
       const userId = req.user.id
 
-      const { traderId, date } = req.body as { traderId: string; date: string };
+      const date = req.query.date
+      console.log(date)
 
-      console.log("-----", traderId, date)
-
-      if (!traderId || !date) {
-        return res.status(400).json({ success: false, message: "traderId and date query params required" });
+      if (typeof date !== "string") {
+        return res.status(400).json({
+          message: "Invalid date",
+        });
       }
 
-      const workArea = await workAreaService.getByTraderAndDate(traderId, new Date(date));
+
+      if (!date) {
+        return res.status(400).json({ success: false, message: "Date required" });
+      }
+
+      const workArea = await workAreaService.getByTraderAndDate(userId, date);
 
       if (!workArea) {
         return res.status(404).json({ success: false, message: "Work area not found" });
@@ -70,6 +76,7 @@ export const workAreaController = {
       next(error);
     }
   },
+
 
   async listByTrader(req: Request, res: Response, next: NextFunction) {
     try {

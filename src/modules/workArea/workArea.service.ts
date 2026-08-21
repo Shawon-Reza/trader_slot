@@ -83,6 +83,9 @@ export const workAreaService = {
         {
           where: {
             traderId
+          },
+          orderBy: {
+            createdAt: "desc"
           }
         }
 
@@ -95,11 +98,22 @@ export const workAreaService = {
   },
 
 
-  async getByTraderAndDate(traderId: string, date: Date): Promise<WorkAreaResponse | null> {
+  async getByTraderAndDate(userId: string, date: string) {
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 59, 999);
+
+    const trader = await prisma.trader.findUnique({
+      where: {
+        userId: userId
+      }
+
+    })
+    if (!trader) {
+      return null
+    }
+    const traderId = trader.id
 
     const workArea = await prisma.workArea.findFirst({
       where: {
