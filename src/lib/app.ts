@@ -1,6 +1,7 @@
 
 import { toNodeHandler } from "better-auth/node";
 import express from "express";
+import cookieParser from "cookie-parser";
 import { auth } from "./auth";
 import cors from "cors";
 import { prisma } from "./prisma";
@@ -55,6 +56,7 @@ app.get("/api/health", async (_req, res) => {
 });
 
 app.use(express.json());
+app.use(cookieParser());
 app.use(cors({
     origin: ["http://localhost:3000", "http://localhost:3001"],
     credentials: true,
@@ -66,7 +68,7 @@ app.use(cors({
 app.all('/api/auth/{*any}', toNodeHandler(auth));
 
 app.use("/api/chat", chatRoutes);
-app.use("/api/work-areas", workAreaRoutes);
+app.use("/api/work-areas", authMiddleware(), workAreaRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/stripe", stripeRoutes);
 

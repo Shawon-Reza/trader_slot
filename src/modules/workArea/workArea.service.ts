@@ -29,25 +29,71 @@ export const workAreaService = {
     return toResponse(workArea);
   },
 
-  async upsert(input: CreateWorkAreaInput): Promise<WorkAreaResponse> {
+
+  async upsert(payload: any) {
+
+
+    const trader = await prisma.trader.findUnique({
+      where: {
+        userId: payload.userId
+      }
+
+    })
+    if (!trader) {
+      return null
+    }
+    const traderId = trader.id
+
     const workArea = await prisma.workArea.upsert({
       where: {
         traderId_date: {
-          traderId: input.traderId,
-          date: input.date,
+          traderId: traderId,
+          date: payload.date,
         },
       },
       create: {
-        traderId: input.traderId,
-        date: input.date,
-        area: input.area,
+        traderId: traderId,
+        date: payload.date,
+        area: payload.area,
       },
       update: {
-        area: input.area,
+        area: payload.area,
       },
     });
     return toResponse(workArea);
   },
+
+
+  // ------------------ Get All work area list ---------------------
+  async allWorkArea(userId: string) {
+
+    try {
+
+      const trader = await prisma.trader.findUnique({
+        where: {
+          userId: userId
+        }
+
+      })
+      if (!trader) {
+        return null
+      }
+      const traderId = trader.id
+      const workAreaList = await prisma.workArea.findMany(
+        {
+          where: {
+            traderId
+          }
+        }
+
+      )
+      return workAreaList
+    } catch (error) {
+      throw new Error(" Fail to fetch work-area list")
+    }
+
+  },
+
 
   async getByTraderAndDate(traderId: string, date: Date): Promise<WorkAreaResponse | null> {
     const startOfDay = new Date(date);

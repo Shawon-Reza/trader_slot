@@ -25,6 +25,10 @@ export const authMiddleware = (...roles: string[]) => {
                 headers: fromNodeHeaders(req.headers),
             });
 
+            console.log(session)
+            console.log(req.cookies)
+
+
             // 2. Authentication check
             if (!session) {
                 return res.status(401).json({
