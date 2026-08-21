@@ -74,5 +74,6 @@ app.use("/api/trader", authMiddleware("TRADER"), traderRoute);
 app.use("/api/activeMode", authMiddleware(), activeMode);
 app.use("/api/business", authMiddleware(), businessRoute);
 
+
 //  Global Error Handler Middleware
 app.use(globalErrorHandler);
