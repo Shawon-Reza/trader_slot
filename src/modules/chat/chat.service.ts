@@ -178,7 +178,7 @@ function parseBookingRequest(content: string): BookingRequest | null {
 }
 
 export const chatService = {
-  async processIncomingMessage(message: IncomingMessage): Promise<NormalizedMessage> {
+  async processIncomingMessage(message: IncomingMessage): Promise<NormalizedMessage[]> {
     const customer = await getOrCreateCustomer(
       message.channel,
       message.senderId,
@@ -201,6 +201,8 @@ export const chatService = {
 
     await saveMessage(conversation.id, normalized);
 
+    const botResponses: NormalizedMessage[] = [];
+
     const bookingRequest = parseBookingRequest(message.content);
     if (bookingRequest) {
       const response = await processBookingRequest(conversation.id, customer.id, bookingRequest, message.channel);
@@ -216,9 +218,24 @@ export const chatService = {
       };
 
       await saveMessage(conversation.id, botResponse);
+      botResponses.push(botResponse);
+    } else {
+      // Default fallback response when no booking detected
+      const fallbackResponse: NormalizedMessage = {
+        sender: MessageSender.BOT,
+        content: "I didn't understand that. Try: 'book 20/08/2026 10:00' or 'available 20/08/2026'",
+        timestamp: new Date(),
+        externalId: null,
+        channel: message.channel,
+        customerIdentifier: message.senderId,
+        customerName: null,
+      };
+
+      await saveMessage(conversation.id, fallbackResponse);
+      botResponses.push(fallbackResponse);
     }
 
-    return normalized;
+    return botResponses;
   },
 
   async handleChatbotWebhook(payload: ChatbotWebhookPayload): Promise<NormalizedMessage[]> {
@@ -232,8 +249,8 @@ export const chatService = {
       metadata: payload.metadata ?? {},
     };
 
-    const result = await this.processIncomingMessage(messages);
-    return [result];
+    const results = await this.processIncomingMessage(messages);
+    return results;
   },
 
   async handleWhatsAppWebhook(payload: WhatsAppWebhookPayload): Promise<NormalizedMessage[]> {
@@ -260,8 +277,8 @@ export const chatService = {
             metadata: {},
           };
 
-          const result = await this.processIncomingMessage(incoming);
-          results.push(result);
+          const botResponses = await this.processIncomingMessage(incoming);
+          results.push(...botResponses);
         }
       }
     }

@@ -3,6 +3,7 @@ import { chatService } from "./chat.service";
 import type { ChatbotWebhookPayload, WhatsAppWebhookPayload } from "./chat.types";
 
 export const chatController = {
+
   async chatbotWebhook(req: Request, res: Response, next: NextFunction) {
     try {
       const payload = req.body as ChatbotWebhookPayload;

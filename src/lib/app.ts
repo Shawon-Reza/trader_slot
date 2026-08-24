@@ -55,6 +55,7 @@ app.get("/api/health", async (_req, res) => {
     }
 });
 
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({

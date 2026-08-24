@@ -4,8 +4,9 @@ import { prisma } from "./lib/prisma";
 
 const main = async () => {
     try {
+        const PORT = Number(process.env.PORT) || 5000;
         await prisma.$connect();
-        app.listen(process.env.PORT, () => {
+        app.listen(PORT, "0.0.0.0", () => {
             console.log(`Server is running on port ${process.env.PORT}`);
         });
 

@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { workAreaService } from "./workArea.service";
 
+
 export const workAreaController = {
 
   async create(req: Request, res: Response, next: NextFunction) {

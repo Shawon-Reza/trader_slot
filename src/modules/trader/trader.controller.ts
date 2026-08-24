@@ -8,19 +8,19 @@ export const traderController = {
 
     async getTraderexistance(req: Request, res: Response, next: NextFunction) {
         const userId = req.user.id
-
         const result = await traderServices.getTraderexistance(userId)
 
-        if (result) {
-            res.status(200).json({
-                success: true,
-                traderExistance: true,
-                data: result
+        if (!result) {
+            return res.status(200).json({
+                success: false,
+                traderExistance: false
             })
         }
+
         res.status(200).json({
-            success: false,
-            traderExistance: false
+            success: true,
+            traderExistance: true,
+            data: result
         })
     },
 
